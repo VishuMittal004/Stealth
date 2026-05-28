@@ -1,6 +1,31 @@
 import axios from 'axios';
 
-const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+function normalizeApiBaseUrl(value) {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) return '/api';
+
+  if (rawValue.startsWith('/')) {
+    const apiIndex = rawValue.split('/').findIndex((part) => part === 'api');
+    if (apiIndex >= 0) {
+      return `/${rawValue.split('/').slice(1, apiIndex + 1).join('/')}`;
+    }
+    return rawValue === '/api' ? rawValue : '/api';
+  }
+
+  try {
+    const url = new URL(rawValue);
+    const parts = url.pathname.split('/').filter(Boolean);
+    const apiIndex = parts.findIndex((part) => part === 'api');
+    url.pathname = apiIndex >= 0 ? `/${parts.slice(0, apiIndex + 1).join('/')}` : '/api';
+    url.search = '';
+    url.hash = '';
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return '/api';
+  }
+}
+
+const apiBaseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || '/api');
 
 const api = axios.create({ baseURL: apiBaseUrl });
 
