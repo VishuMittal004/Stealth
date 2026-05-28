@@ -26,8 +26,20 @@ const { getLastDateKeys } = require('./services/dateUtils');
 
 const app = express();
 const port = process.env.PORT || 5000;
+const allowedOrigins = (process.env.CLIENT_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || true, credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '3mb' }));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
